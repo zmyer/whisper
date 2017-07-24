@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import errno
 import os
 import sys
 import time
@@ -23,6 +24,10 @@ aggregationMethods = whisper.aggregationMethods
 
 # RRD doesn't have a 'sum' or 'total' type
 aggregationMethods.remove('sum')
+# RRD doesn't have a 'absmax' type
+aggregationMethods.remove('absmax')
+# RRD doesn't have a 'absmin' type
+aggregationMethods.remove('absmin')
 
 option_parser = optparse.OptionParser(usage='''%prog rrd_path''')
 option_parser.add_option(
@@ -38,10 +43,11 @@ option_parser.add_option(
     ', '.join(aggregationMethods),
     default='average',
     type='string')
-option_parser.add_option('--destinationPath', 
-    help="Path to place created whisper file. Defaults to the " + 
+option_parser.add_option(
+    '--destinationPath',
+    help="Path to place created whisper file. Defaults to the " +
     "RRD file's source path.",
-    default='.', 
+    default=None,
     type='string')
 
 (options, args) = option_parser.parse_args()
@@ -115,12 +121,13 @@ for datasource in datasources:
     if not os.path.isdir(destination_path):
       try:
         os.makedirs(destination_path)
-      except OSError as exc: # Python >2.5
+      except OSError as exc:  # Python >2.5
         if exc.errno == errno.EEXIST and os.path.isdir(destination_path):
           pass
-        else: raise
+        else:
+          raise
     rrd_file = os.path.basename(rrd_path).replace('.rrd', '%s.wsp' % suffix)
-    path = os.path.dirname(destination_path) + '/' + rrd_file
+    path = destination_path + '/' + rrd_file
   else:
     path = rrd_path.replace('.rrd', '%s.wsp' % suffix)
 
